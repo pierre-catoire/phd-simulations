@@ -1,0 +1,147 @@
+---
+title: "draft"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(bnlearn)
+```
+
+## Draft - simulations
+
+### Objectives:
+
+- Generative models:
+
+- S1D: Multiple models with various missingness mechanisms, discrete variables
+- S2M: Mixed model, realistic, various missingness mechanisms
+
+- For each model:
+
+- Generate Dtrain and Dtest using theta and phi vectors:
+- theta: variables parameters
+- phi: missing indicators parameters
+- For every algorithm:
+- train the algorithm on Dtrain
+- predict on Dtest
+- measure performance metrics
+
+## Data generation
+
+```{r}
+# Generate the DAGs
+generationModelList = list("S1M1" = list(dag = model2network("[X1][Y|X1][M1]")),
+                           "S1M2" = list(dag = model2network("[X1][X2][Y|X1:X2][M1|X2]")),
+                           "S1M3" = list(dag = model2network("[X1][X3][X2|X1:X3][M1|X3][Y|X1:X2]")),
+                           "S1M4" = list(dag = model2network("[X1][Y|X1][M1|X1][X2|Y]")),
+                           "S1M5" = list(dag = model2network("[X1][X2][Y|X1:X2][M1|Y]")))
+```
+
+```{r}
+params = list(S1M1 = list(theta = list(X1 = .4,
+                                       Y = c(.2, .5)),
+                          phi = list(M1 = .4),
+                          labels = list(theta = c("TR","FA"),
+                                        phi = c("MISS","OBS"))),
+              S1M2 = list(theta = list(X1 = .4,
+                                       X2 = .4,
+                                       Y = c(.2, .5, .3, .7)),
+                          phi = list(M1 = c(.4, .2)),
+                          labels = list(theta = c("TR","FA"),
+                                        phi = c("MISS","OBS"))))
+```
+
+```{r}
+# feed the parameters for S1
+
+feedS1M1 = function(dag, params){
+  theta = params$theta
+  phi = params$phi
+  labels = params$labels
+  
+  cptX1 = matrix(c(theta$X1, 1-theta$X1),
+                 ncol = 2,
+                 dimnames = list(NULL,
+                                 c(labels$theta[1:2])))
+  
+  cptM1 = matrix(c(phi$M1, 1-phi$M1),
+                 ncol = 2,
+                 dimnames = list(NULL,
+                                 c(labels$phi[1:2])))
+  
+  cptY = c(theta$Y[1], 1-theta$Y[1],
+           theta$Y[2], 1-theta$Y[2])
+  
+  dim(cptY) = c(2, 2)
+  dimnames(cptY) = list("Y" = labels$theta,
+                        "X1" =  labels$theta)
+  
+  model = custom.fit(dag,
+                     dist = list(X1 = cptX1,
+                                 M1 = cptM1,
+                                 Y = cptY))
+  return(list(dag = dag,
+              model = model,
+              params = params))
+}
+
+
+generationModelList$S1M1 = feedS1M1(generationModelList$S1M1$dag,
+                                    params$S1M1)
+
+generationModelList$S1M1
+```
+
+```{r}
+feedS1M2 = function(dag, params){
+  theta = params$theta
+  phi = params$phi
+  labels = params$labels
+  
+  cptX1 = matrix(c(theta$X1, 1-theta$X1),
+                 ncol = 2,
+                 dimnames = list(NULL,
+                                 c(labels$theta[1:2])))
+  
+  cptX2 = matrix(c(theta$X2, 1-theta$X2),
+                 ncol = 2,
+                 dimnames = list(NULL,
+                                 c(labels$theta[1:2])))
+  
+  cptY = c(theta$Y[1], 1-theta$Y[1],
+           theta$Y[2], 1-theta$Y[2],
+           theta$Y[3], 1-theta$Y[3],
+           theta$Y[4], 1-theta$Y[4])
+  
+  dim(cptY) = c(2, 2, 2)
+  dimnames(cptY) = list("Y" = labels$theta,
+                        "X1" =  labels$theta,
+                        "X2" = labels$theta)
+  
+  cptM1 = c(phi$M1[1], 1-phi$M1[1],
+            phi$M1[2], 1-phi$M1[2])
+  
+  dim(cptM1) = c(2, 2)
+  dimnames(cptM1) = list("M1" = labels$phi,
+                         "X2" =  labels$theta)
+  
+  model = custom.fit(dag,
+                     dist = list(X1 = cptX1,
+                                 X2 = cptX2,
+                                 M1 = cptM1,
+                                 Y = cptY))
+  return(list(dag = dag,
+              model = model,
+              params = params))
+}
+
+generationModelList$S1M2 = feedS1M2(generationModelList$S1M2$dag,
+                                    params$S1M2)
+
+generationModelList$S1M2
+```
+
+
+
+
