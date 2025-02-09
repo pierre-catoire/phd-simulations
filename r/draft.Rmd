@@ -142,6 +142,16 @@ generationModelList$S1M2 = feedS1M2(generationModelList$S1M2$dag,
 generationModelList$S1M2
 ```
 
+## Todo
 
+- define functions feedS1M3, feedS1M4, feedS1M5
+- develop algorithm to:
+  - draw random theta
+  - for every draw, generate a table of random sample + values of theta and phi
+- transfer data to python
+- in python:
+  - train
+  - test
+  - measure
 
 
